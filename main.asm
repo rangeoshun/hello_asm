@@ -1,9 +1,10 @@
   *=0x0FFE
   !byte $00, $10
 
-  sei         ; turn off interrupts
-
   jsr clr_scr
+
+start:
+  sei         ; turn off interrupts
 
   ldy #$7f    ; $7f = %01111111
   sty $dc0d   ; Turn off CIAs Timer interrupts
@@ -26,30 +27,48 @@
   sta $d011   ; we need to make sure it is set to zero
 
   cli         ; clear interrupt disable flag
-  jmp *       ; infinite loop
+
+  jmp start   ; infinite loop
 
 irq:
   dec $d019
 
-  ;; do stuff fere
+	;; do stuff here
+  jsr rand
+  lda seed
+  asl
+  lsr
+  cmp seed
+  beq char_a
 
+  lda #$6d
+
+  jmp print_a
+char_a:
+  lda #$6e
+print_a:
+  jsr $ffd2
+return:
   jmp $ea81   ; return to kernel interrupt routine
 
 clr_scr:
   lda #$00
-  sta $d020
+  sta $d020                     ; background black
   sta $d021
+  jsr $e544                     ; clear text
+  rts
 
-  tax
+seed:
+  !byte $a9
 
-  lda #$20
-
-clr_loop:
-  sta $0400,x
-  sta $0500,x
-  sta $0600,x
-  sta $0700,x
-
-  dex
-  bne clr_loop
+rand:
+  lda seed
+  beq do_eor
+  asl
+  beq no_eor ;if the input was $80, skip the EOR
+  bcc no_eor
+do_eor:
+  eor #$1d
+no_eor:
+  sta seed
   rts
