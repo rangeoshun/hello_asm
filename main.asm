@@ -9,10 +9,15 @@ start:
   ldy #$7f    ; $7f = %01111111
   sty $dc0d   ; Turn off CIAs Timer interrupts
   sty $dd0d   ; Turn off CIAs Timer interrupts
+
   ;; lda $dc0d   ; cancel all CIA-IRQs in queue/unprocessed
   ;; lda $dd0d   ; cancel all CIA-IRQs in queue/unprocessed
   lda #$01    ; Set Interrupt Request Mask...
   sta $d01a   ; ...we want IRQ by Rasterbeam
+
+  lda $d011                     ; bitmap-mode
+  ora #%00001000
+  sta $d011
 
   lda #<irq   ; point IRQ Vector to our custom irq routine
   ldx #>irq
@@ -32,8 +37,8 @@ start:
 
 irq:
   dec $d019
+  ;; do stuff here
 
-	;; do stuff here
   jsr rand
   lda seed
   asl
@@ -47,7 +52,20 @@ irq:
 char_a:
   lda #$6e
 print_a:
+  ldx seed
+  inc $d800,x
+  inc $d900,x
+  inc $da00,x
+  inc $db00,x
+
   jsr $ffd2
+
+  ;; cec        ;jump to 0,0
+  ;; ldx #$00
+  ;; ldy #$00
+  ;; jsr $fff0
+  ;; sec
+  ;; jsr $fff0
 return:
   jmp $ea81   ; return to kernel interrupt routine
 
